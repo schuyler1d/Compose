@@ -293,8 +293,31 @@ function setupAutocomplete(prePopulateData) {
   });
 }
 
-function replaceEditor() {
-  $("#editor").ckeditor(function _on_ckeditor_ready() {
+function replaceEditor(opts) {
+  $("#editor").ckeditor(function _on_ckeditor_ready(editorInstance) {
+    if (!opts || opts.focus)
+      this.focus();
+    var c = this;
+    var sel = c.window.$.getSelection();
+    sel.removeAllRanges();
+    var rng = c.document.$.createRange();
+
+    rng.selectNode(c.document.$.body.lastChild);
+    rng.collapse(false);
+    sel.addRange(rng);
+    Log.error(data.identity);
+    Log.error(data.identity.replyOnTop);
+    Log.error(editorInstance);//textarea elt
+    Log.error(this.document);
+    Log.error(self);
+    Log.error(arguments.length);
+    Log.error(this.document.$.selection);
+    return;
+    let p = this.document.$.getElementsByTagName("p");
+    if (p.length) {
+      this.getSelection().selectElement(p[0]);
+    }
+    
     return;
     // Try to move the cursor BEFORE the quoted text...
     let p = self.document.getElementsByTag("p")[0];
@@ -310,7 +333,7 @@ function setupEditor() {
     switch (data.type) {
       case mCompType.New:
         document.getElementById("editor").textContent = wrapFormatting("");
-        replaceEditor();
+        replaceEditor({focus:false});
         break;
 
       case mCompType.Reply:
@@ -335,10 +358,14 @@ function setupEditor() {
         document.getElementById("editor").textContent =
           "mCompType: " + data.type + " (unsupported)";
         replaceEditor();
+        
     }
     setupAutocomplete(prePopulateData);
     setupProgressDialog();
+
     $("#to").focus();
+    Log.error('TO focus');
+    Log.error(data.type);
   } catch (e) {
     Log.error(e);
     dumpCallStack(e);
