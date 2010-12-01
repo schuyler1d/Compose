@@ -319,9 +319,10 @@ function replaceEditor(opts) {
     case 0:
       var n = doc.getElementsByClassName('start');
       if (n.length) {
-	rng.selectNode(n[n.length-1]);
+	var bottom = n[n.length-1];
+	rng.selectNode(bottom);
 	rng.collapse(true);
-	
+	doc.body.scrollTop = bottom.offsetTop + 
       }
       break;
     case 1:
