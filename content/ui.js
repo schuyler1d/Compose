@@ -146,14 +146,15 @@ function setupForwardInline() {
     "  Date: ", date, "\n",
     "</div>"
   ].join("");
+  $("#subject").val("Fwd: "+data.msgHdr.mime2DecodedSubject);
   try {
     quoteMessage(
       data.msgHdr,
       document.getElementById("secret"),
       function (aHtml) {
         document.getElementById("editor").textContent =
-          wrapFormatting(quoteSigAndStart(header + aHtml,false));
-        replaceEditor();
+          wrapFormatting(quoteSigAndStart(header + aHtml,false,true));
+        replaceEditor({cursorOnTop:1});
       }
     );
   } catch (e) {
@@ -204,7 +205,6 @@ function setupReply(prePopulateData) {
     for each ([i, bcc] in Iterator(bccList))];
 
   try {
-
     quoteMessage(
       data.msgHdr,
       document.getElementById("secret"),
@@ -220,12 +220,14 @@ function setupReply(prePopulateData) {
   }
 }
 
-function quoteSigAndStart(quote, wrap_quote) {
+function quoteSigAndStart(quote, wrap_quote, top_cursor) {
+  ///pre/post-pends a blank paragraph depending on settings
+  ///TODO: include signature in the right place, too
   var front = '', back='';
   if (wrap_quote) {
     quote = "<blockquote type='cite'>"+quote+"</blockquote>";
   }
-  if (data.identity.replyOnTop > 0) {
+  if (data.identity.replyOnTop > 0 || top_cursor) {
     front += '<p class="start"></p>\n';
   }
   if (data.identity.replyOnTop !== 1) {
@@ -311,18 +313,18 @@ function setupAutocomplete(prePopulateData) {
 function replaceEditor(opts) {
   $("#editor").ckeditor(function _on_ckeditor_ready(editorInstance) {
     let sel = this.window.$.getSelection(),
-        doc = this.document.$l,
-        rng = doc.createRange();
+        doc = this.document.$,
+        rng = doc.createRange(),
+        cursorOnTop = opts && opts.cursorOnTop || data.identity.replyOnTop;
     sel.removeAllRanges();
-
-    switch (data.identity.replyOnTop) {
+    switch (cursorOnTop) {
     case 0:
       var n = doc.getElementsByClassName('start');
       if (n.length) {
 	var bottom = n[n.length-1];
 	rng.selectNode(bottom);
 	rng.collapse(true);
-	doc.body.scrollTop = bottom.offsetTop + 
+	doc.body.scrollTop = bottom.offsetTop + parseInt(this.window.$.innerHeight / 2);
       }
       break;
     case 1:
@@ -342,23 +344,6 @@ function replaceEditor(opts) {
       this.focus();
     }
 
-    Log.error(data.identity);
-    Log.error(data.identity.replyOnTop);
-    Log.error(editorInstance);//textarea elt
-    Log.error(this.document);
-    Log.error(self);
-    Log.error(arguments.length);
-    Log.error(this.document.$.selection);
-    return;
-    let p = this.document.$.getElementsByTagName("p");
-    if (p.length) {
-      this.getSelection().selectElement(p[0]);
-    }
-    
-    return;
-    // Try to move the cursor BEFORE the quoted text...
-    let p = self.document.getElementsByTag("p")[0];
-    self.getSelection().selectElement(p);
   });
 }
 
@@ -395,14 +380,10 @@ function setupEditor() {
         document.getElementById("editor").textContent =
           "mCompType: " + data.type + " (unsupported)";
         replaceEditor();
-        
     }
     setupAutocomplete(prePopulateData);
     setupProgressDialog();
-
     $("#to").focus();
-    Log.error('TO focus');
-    Log.error(data.type);
   } catch (e) {
     Log.error(e);
     dumpCallStack(e);
